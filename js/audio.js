@@ -89,6 +89,7 @@ export function createAudio(settings) {
         else speechSynthesis.speak(u);
       } catch (_) {}
     },
+    hush() { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (_) {} },
     apply() { if (!ctx) return; sfxBus.gain.value = S.sfx ? 1 : 0; musicBus.gain.value = S.music ? 0.32 : 0; },
     suspend() { ctx?.suspend?.(); }, resume() { ctx?.resume?.(); },
   };

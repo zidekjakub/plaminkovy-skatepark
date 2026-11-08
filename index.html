@@ -23,6 +23,8 @@
     <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3b2e"/><stop offset=".55" stop-color="#ff8a1f"/><stop offset="1" stop-color="#ffe14d"/></linearGradient>
     <symbol id="flame" viewBox="0 0 40 52"><path d="M20 51C9 51 3 43 4 34c1-7 6-11 8-17 1 5 3 8 6 9-2-9 2-18 9-25-1 8 2 13 6 18 4 5 5 10 4 15-1 10-8 17-17 17z" fill="url(#fg)" stroke="#2a0d05" stroke-width="2.4" stroke-linejoin="round"/><path d="M20 47c-5 0-8-4-7-9 1-4 4-6 5-10 2 4 5 5 6 9 2 5-1 10-4 10z" fill="#fff3a0"/></symbol>
     <symbol id="lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="4" y="10" width="16" height="11" rx="3" fill="currentColor"/></symbol>
+    <linearGradient id="bbg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2ad1ff"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>
+    <symbol id="boardbeat" viewBox="0 0 300 90"><rect x="3" y="3" width="294" height="84" rx="42" fill="#14102a" stroke="#2ad1ff" stroke-width="6"/><g fill="url(#bbg)"><rect x="34" y="32" width="9" height="26" rx="4.5"/><rect x="48" y="24" width="9" height="42" rx="4.5"/><rect x="62" y="17" width="9" height="56" rx="4.5"/><rect x="76" y="27" width="9" height="36" rx="4.5"/><rect x="90" y="21" width="9" height="48" rx="4.5"/></g><text x="110" y="58" font-family="Bungee, 'Arial Black', sans-serif" font-size="30" fill="#fff">BOARD<tspan fill="#ff4fa3">BEAT</tspan></text></symbol>
     <symbol id="tri-l" viewBox="0 0 40 40"><path d="M27 8 11 20l16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
     <symbol id="tri-r" viewBox="0 0 40 40"><path d="M13 8l16 12-16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
   </defs>
@@ -62,12 +64,13 @@
   <div class="mid">
     <button class="big-arrow fire" id="play" type="button"><span>HRÁT</span></button>
     <div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num" id="totalTitle">0</span><span class="unit">plamínků celkem</span></div>
+    <div class="sponsor"><small>Hlavní partner</small><svg viewBox="0 0 300 90" role="img" aria-label="BoardBeat"><use href="#boardbeat"/></svg></div>
   </div>
   <div class="bottom">
     <div class="toggles">
       <button class="toggle" data-set="music" type="button" aria-pressed="true"><i></i>Hudba</button>
       <button class="toggle" data-set="sfx" type="button" aria-pressed="true"><i></i>Zvuky</button>
-      <button class="toggle" data-set="voice" type="button" aria-pressed="true"><i></i>Hlas</button>
+      <button class="toggle" data-set="voice" type="button" aria-pressed="true"><i></i>Hlas v menu</button>
     </div>
     <div class="install" id="install" hidden>Přidej si hru na plochu: v Safari ťukni na <b>Sdílet</b> a pak <b>Přidat na plochu</b>.</div>
   </div>

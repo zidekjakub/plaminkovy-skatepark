@@ -96,6 +96,12 @@ button:focus-visible{outline:3px solid var(--neon);outline-offset:3px}
 .park.locked::after{content:"";position:absolute;inset:0;background:rgba(10,6,22,.6)}
 .park .lk{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-62%);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.6);font:700 calc(var(--u)*2.4)/1 var(--font-body);text-transform:uppercase;letter-spacing:.1em;color:var(--ink-dim)}
 .park .lk svg{width:calc(var(--u)*6)}
+.park:not(.locked){cursor:pointer}
+.park:not(.locked):active{transform:scale(.97)}
+.park .prec{position:absolute;top:calc(var(--u)*1.4);right:calc(var(--u)*1.4);font:700 calc(var(--u)*2.4)/1 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:#2a1000;background:linear-gradient(180deg,#fff3a6,#ffc21f);padding:calc(var(--u)*.8) calc(var(--u)*1.4);border-radius:999px}
+.sponsor{display:flex;align-items:center;gap:calc(var(--u)*1.4);padding:calc(var(--u)*.8) calc(var(--u)*1.6);border-radius:999px;background:rgba(16,8,32,.6)}
+.sponsor small{font:700 calc(var(--u)*2.2)/1 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+.sponsor svg{height:calc(var(--u)*5.6);width:auto}
 
 /* ---------- in-game HUD ---------- */
 #hud{position:fixed;inset:0;z-index:4;pointer-events:none;font-family:var(--font-hud)}

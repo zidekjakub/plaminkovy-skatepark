@@ -25,10 +25,10 @@ export const VEHICLES = [
 
 export const PARKS = [
   { id: 'mesto', name: 'Městský skatepark', open: true, sky: ['#3a1c60', '#ff8a52'] },
-  { id: 'plaz', name: 'Pláž', sky: ['#2a8ad8', '#ffd38a'] },
+  { id: 'dzungle', name: 'Dino džungle', open: true, sky: ['#0b2a2e', '#ffcf73'] },
+  { id: 'fmx', name: 'FMX poušť', open: true, sky: ['#2a2a6b', '#ffb050'] },
+  { id: 'mega', name: 'Mega rampa', open: true, sky: ['#03040f', '#1d2a6a'] },
   { id: 'sopka', name: 'Sopka', sky: ['#2a0c18', '#ff4a1a'] },
-  { id: 'led', name: 'Ledová hora', sky: ['#5ab8ff', '#e8f6ff'] },
-  { id: 'dzungle', name: 'Dino džungle', sky: ['#1f5a3a', '#c8f07a'] },
   { id: 'mesic', name: 'Měsíc', sky: ['#05040f', '#3a3a6a'] },
 ];
 

@@ -1,7 +1,6 @@
 // Arcade physics on the park profile. Forgiving on purpose: a 7-year-old
 // should land most tricks, never get stuck, and always know why he crashed.
 import { SCORE, FLIP_NAMES, STYLE_NAMES } from './data.js';
-import { T } from './track.js';
 
 const G = 9.81, TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -72,8 +71,11 @@ export class Rider {
       }
     }
     if (turbo) { const dir = Math.sign(this.v) || this.facing * Math.sign(p.tx || 1); if (Math.abs(this.v) < vmax) a += dir * 4.5 * Math.abs(p.tx); }
+    // pushing but barely moving (stuck in a dip between jumps): help him out
+    this.stuckT = inp.x && Math.abs(this.v) < 1.5 ? (this.stuckT || 0) + dt : Math.max(0, (this.stuckT || 0) - dt * 2);
+    if (this.stuckT > 1.0 && Math.abs(p.tx) > 0.05) a += Math.sign(inp.x * p.tx) * 11;
     a -= Math.sign(this.v) * 0.3 + this.v * Math.abs(this.v) * 0.0035;
-    if (Math.abs(this.v) > vmax + 0.5 && p.ty * Math.sign(this.v) > -0.05) a -= Math.sign(this.v) * 1.5;
+    if (Math.abs(this.v) > vmax + 5 && p.ty * Math.sign(this.v) > -0.05) a -= Math.sign(this.v) * 1.5; // only trims crazy speeds; downhill speed is kept for big jumps
     this.v += a * dt;
     if (Math.abs(this.v) < 0.05 && !inp.x && Math.abs(p.ty) < 0.02) this.v = 0;
 
@@ -132,10 +134,10 @@ export class Rider {
     this.emit('takeoff', { x: this.x, y: this.y, big });
   }
   enterVert(side, v) {
-    const vy = Math.min(9.3, v);
+    const vy = Math.min(this.track.caps.vert, v);
     if (vy < 1.2) { this.s = side > 0 ? this.track.total - 0.01 : 0.01; this.v = -side * 0.5; return; }
     this.mode = 'vert'; this.side = side; this.vx = 0; this.vy = vy;
-    this.x = side > 0 ? this.track.L : 0; this.y = T.H; this.vT = 2 * vy / G;
+    this.x = side > 0 ? this.track.L : 0; this.vTop = side > 0 ? this.track.topR : this.track.topL; this.y = this.vTop; this.vT = 2 * vy / G;
     if (this.turning) { this.turning = 0; this.turnYaw = 0; this.facing = side; }
     this.facing = side; this.heldDir = this.lastX || 0;
     this.air = this.newAir(true); this.omega = 0; this.phi = side > 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -145,7 +147,7 @@ export class Rider {
   /* ---------- flying ---------- */
   capLaunch() {
     // no rocket launches: a steep ollie on turbo would otherwise fly off the screen
-    this.vy = Math.min(this.vy, 9.6); this.vx = clamp(this.vx, -19, 19);
+    const c = this.track.caps; this.vy = Math.min(this.vy, c.vy); this.vx = clamp(this.vx, -c.vx, c.vx);
   }
   rotate(dt, inp, upright) {
     const st = this.st;
@@ -170,7 +172,7 @@ export class Rider {
     this.phi += this.omega * dt; this.air.R += this.omega * dt;
   }
   timeToLand() {
-    const h = this.mode === 'vert' ? this.y - T.H : this.y - this.track.groundAt(this.x + this.vx * 0.15).y;
+    const h = this.mode === 'vert' ? this.y - this.vTop : this.y - this.track.groundAt(this.x + this.vx * 0.15).y;
     return (this.vy + Math.sqrt(Math.max(0, this.vy * this.vy + 2 * G * Math.max(0, h)))) / G;
   }
   tricks(dt, inp) {
@@ -241,12 +243,12 @@ export class Rider {
     this.rotate(dt, inp, wall);
     this.tricks(dt, inp);
     this.rings(px, py);
-    if (this.y <= T.H && this.vy < 0) {
-      if (Math.abs(wrap(this.phi - wall)) > LAND_OK) { this.y = T.H; this.crash(); return; }
+    if (this.y <= this.vTop && this.vy < 0) {
+      if (Math.abs(wrap(this.phi - wall)) > LAND_OK) { this.y = this.vTop; this.crash(); return; }
       this.phi = this.near(wall, this.phi);
       this.mode = 'ground'; this.s = side > 0 ? this.track.total - 0.001 : 0.001;
       this.v = side > 0 ? -Math.abs(this.vy) : Math.abs(this.vy);
-      this.facing = -side; this.turnYaw = 0; this.spinYaw = 0; this.x = side > 0 ? this.track.L : 0; this.y = T.H;
+      this.facing = -side; this.turnYaw = 0; this.spinYaw = 0; this.x = side > 0 ? this.track.L : 0; this.y = this.vTop;
       this.landed();
     }
   }

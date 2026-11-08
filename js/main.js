@@ -3,6 +3,7 @@ import { buildTrack } from './track.js';
 import { Rider } from './physics.js';
 import { makeArt } from './art.js';
 import { createWorld } from './world.js';
+import { THEMES } from './parks.js';
 import { createRiderModel } from './riderModel.js';
 import { createInput } from './input.js';
 import { createAudio } from './audio.js';
@@ -21,10 +22,13 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 // fonts must be ready before the graffiti is painted
 await Promise.race([Promise.all([document.fonts.load('80px Bungee'), document.fonts.load('40px "Lilita One"')]).catch(() => {}), new Promise((r) => setTimeout(r, 2500))]);
 
-const track = buildTrack();
 const art = makeArt();
+const tracks = {};
+const trackOf = (id) => tracks[id] || (tracks[id] = buildTrack(id));
+if (!THEMES[store.park]) store.park = 'mesto';
+let track = trackOf(store.park);
 let world;
-try { world = createWorld($('#gl'), track, art); }
+try { world = createWorld($('#gl'), art); world.setPark(track, THEMES[store.park]); }
 catch (e) { $('#boot').textContent = 'Tenhle prohlížeč neumí 3D grafiku. Zkus Safari nebo Chrome.'; throw e; }
 const audio = createAudio(store);
 const input = createInput($('#hud'));
@@ -96,13 +100,24 @@ $('#sVehicle .back').onclick = () => { click(); show('rider'); };
 const PARK_ART = {
   mesto: '<rect width="160" height="100" fill="url(#pkS)"/><g fill="#24163f"><rect x="6" y="38" width="16" height="40"/><rect x="26" y="26" width="14" height="52"/><rect x="44" y="44" width="18" height="34"/><rect x="104" y="30" width="16" height="48"/><rect x="124" y="40" width="22" height="38"/></g><g fill="#ffcf78"><rect x="10" y="44" width="3" height="3"/><rect x="30" y="34" width="3" height="3"/><rect x="34" y="50" width="3" height="3"/><rect x="108" y="38" width="3" height="3"/><rect x="128" y="48" width="3" height="3"/></g><path d="M0 100V70h20q24 0 30 30zM160 100V70h-20q-24 0-30 30z" fill="#b9add6"/><circle cx="80" cy="62" r="10" fill="none" stroke="#ff8a1f" stroke-width="3"/>',
   plaz: '<rect width="160" height="100" fill="url(#pkS)"/><circle cx="120" cy="34" r="14" fill="#fff3a0"/><rect y="64" width="160" height="14" fill="#2ab7e8"/><rect y="78" width="160" height="22" fill="#f4d58a"/><path d="M34 80q-2-26 4-40" stroke="#6b3d1f" stroke-width="4" fill="none"/><path d="M38 40q-16-2-22 8M38 40q14-6 22 4M38 40q-4-12-14-14M38 40q8-12 18-10" stroke="#2f9a3a" stroke-width="5" fill="none" stroke-linecap="round"/>',
+  fmx: '<rect width="160" height="100" fill="url(#pkS)"/><path d="M0 70h30l6-26h34l6 26h84v30H0z" fill="#b8552e"/><path d="M36 44h34" stroke="#e07a4a" stroke-width="3"/><path d="M0 100V84q30-14 52 0 8-16 22-16h10q20 0 34 16 22-10 42 0v16z" fill="#d9944e"/><path d="M60 68l18 16" stroke="#9aa3b8" stroke-width="5"/><circle cx="104" cy="52" r="10" fill="none" stroke="#ff8a1f" stroke-width="3"/><path d="M128 84V62m0 8h-6v-6m6 10h6v-8" stroke="#3f8a4a" stroke-width="4" fill="none" stroke-linecap="round"/>',
+  mega: '<rect width="160" height="100" fill="url(#pkS)"/><g fill="#fff"><circle cx="18" cy="12" r="1.2"/><circle cx="70" cy="8" r="1"/><circle cx="150" cy="16" r="1.2"/></g><path d="M8 18h16v82H8z" fill="#2a2d45"/><path d="M24 18q10 0 16 30t22 40h-8" fill="none" stroke="#2ad1ff" stroke-width="3"/><path d="M8 18h16" stroke="#ff4fa3" stroke-width="3"/><path d="M62 88q10-14 24-14h10q12 0 18 14" fill="none" stroke="#2ad1ff" stroke-width="3"/><path d="M132 100q0-40 20-40" fill="none" stroke="#ff4fa3" stroke-width="3"/><circle cx="86" cy="44" r="11" fill="none" stroke="#ff8a1f" stroke-width="3"/><path d="M0 100V92h160v8z" fill="#1a1c2e"/><g fill="#ffd23f"><circle cx="40" cy="94" r="1.5"/><circle cx="60" cy="95" r="1.5"/><circle cx="100" cy="94" r="1.5"/><circle cx="120" cy="95" r="1.5"/></g>',
   sopka: '<rect width="160" height="100" fill="url(#pkS)"/><path d="M20 100 66 34h28l46 66z" fill="#3a1a22"/><path d="M66 34h28l-6 10-8-4-8 6z" fill="#ff5a14"/><path d="M80 34q-6-14 4-26q-2 12 8 18" fill="#ff8a1f"/><path d="M72 46q4 20-6 54" stroke="#ff3b2e" stroke-width="3" fill="none"/>',
   led: '<rect width="160" height="100" fill="url(#pkS)"/><path d="M0 100 46 30l30 40 24-28 60 58z" fill="#e8f6ff"/><path d="M46 30l-10 16 10-4 8 6zM100 42l-8 12 8-3 7 5z" fill="#fff"/><path d="M0 100 46 30l30 40" fill="none" stroke="#8fc8ec" stroke-width="2"/>',
   dzungle: '<rect width="160" height="100" fill="url(#pkS)"/><path d="M0 100V60q20-20 40 0t40 0 40 0 40 0v40z" fill="#1f7a3a"/><path d="M96 70q8-24 30-24 12 0 14 10-6 6-16 4l-6 10z" fill="#3fbf4a"/><circle cx="128" cy="52" r="2" fill="#123"/><path d="M110 46l4-8 4 7 4-8 3 9" fill="#ffe14d"/>',
   mesic: '<rect width="160" height="100" fill="url(#pkS)"/><g fill="#fff"><circle cx="20" cy="18" r="1.4"/><circle cx="60" cy="10" r="1"/><circle cx="140" cy="22" r="1.4"/><circle cx="100" cy="8" r="1"/></g><circle cx="128" cy="30" r="12" fill="#3a8be8"/><path d="M0 100V72q80-16 160 0v28z" fill="#9a98b8"/><ellipse cx="50" cy="84" rx="12" ry="4" fill="#77759a"/><ellipse cx="112" cy="88" rx="8" ry="3" fill="#77759a"/>',
 };
+function setPark(id) {
+  if (!THEMES[id] || (id === store.park && world.track === trackOf(id))) return;
+  store.park = id; save(true); track = trackOf(id); world.setPark(track, THEMES[id]);
+}
 function renderParks() {
-  $('#parks').innerHTML = PARKS.map((p) => `<div class="park ${p.open ? 'on' : 'locked'}"><svg class="art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pkS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset="1" stop-color="${p.sky[1]}"/></linearGradient></defs>${PARK_ART[p.id]}</svg>${p.open ? '' : '<div class="lk"><svg viewBox="0 0 24 24"><use href="#lock"/></svg>Brzy</div>'}<h4>${p.name}</h4></div>`).join('');
+  $('#parks').innerHTML = PARKS.map((p) => `<div class="park ${p.open ? '' : 'locked'} ${p.id === store.park ? 'on' : ''}" data-id="${p.id}" ${p.open ? 'role="button" tabindex="0"' : ''}><svg class="art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pkS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset="1" stop-color="${p.sky[1]}"/></linearGradient></defs>${PARK_ART[p.id]}</svg>${p.open ? (store.best[p.id] ? `<span class="prec">Rekord ${fmt(store.best[p.id].pts)}</span>` : '') : '<div class="lk"><svg viewBox="0 0 24 24"><use href="#lock"/></svg>Brzy</div>'}<h4>${p.name}</h4></div>`).join('');
+  $$('#parks .park').forEach((el) => {
+    const p = PARKS.find((q) => q.id === el.dataset.id); if (!p.open) return;
+    el.onclick = () => { click(); setPark(p.id); renderParks(); audio.say(p.name); };
+    el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') el.onclick(); };
+  });
 }
 $('#sPark .next').onclick = () => { click(); startRide(); };
 $('#sPark .back').onclick = () => { click(); show('vehicle'); };
@@ -117,7 +132,7 @@ function startRide() {
   num.textContent = '0'; unitEl.textContent = flamesWord(0); $('#best').textContent = fmt((store.best[store.park] || {}).pts || 0);
   input.clear(); paused = false;
   show('play'); world.snapNext();
-  audio.init(); audio.say('A jde se hrát!');
+  audio.init(); audio.hush();
   tutorial.start();
 }
 const unitEl = $('#counter .unit');
@@ -130,15 +145,14 @@ function fly(from, to, add, delay) {
   const an = el.animate([{ transform: `translate(${from.x}px,${from.y}px) scale(.4)`, opacity: 0 }, { transform: `translate(${mx}px,${my}px) scale(1.25)`, opacity: 1, offset: 0.4 }, { transform: `translate(${to.x}px,${to.y}px) scale(.7)`, opacity: 1 }], { duration: 650 + Math.random() * 200, delay, easing: 'ease-in', fill: 'backwards' });
   an.onfinish = () => { el.remove(); if (ses === session) { session.shown += add; setCount(); audio.coin(); } };
 }
-const say = (title) => title.replace(/ \+ /g, ' a ').replace(/ ×(\d+)/g, ' $1 krát').toLowerCase();
 function onEvent(type, d) {
   if (type === 'takeoff') { world.fx('takeoff', d); audio.takeoff(d.big); tutorial.event('takeoff'); }
   else if (type === 'land') { world.fx('land', d); audio.land(d.hard); }
   else if (type === 'ring') { world.fx('ring', d); audio.ring(); tag('+4 KRUH', world.project([d.x, d.y + 1.2, 0])); }
   else if (type === 'spin') audio.spin();
   else if (type === 'style') audio.style();
-  else if (type === 'turbo') { audio.turbo(); audio.say('Turbo!'); }
-  else if (type === 'crash') { world.fx('crash', d); audio.crash(); tag('BUM!', world.project([d.x, d.y + 1.5, 0]), 'bum'); audio.say('Bum! Nevadí, jedeme dál.'); }
+  else if (type === 'turbo') audio.turbo();
+  else if (type === 'crash') { world.fx('crash', d); audio.crash(); tag('BUM!', world.project([d.x, d.y + 1.5, 0]), 'bum'); }
   else if (type === 'trick') scored(d);
 }
 function scored(d) {
@@ -153,8 +167,9 @@ function scored(d) {
   const best = store.best[store.park] || { pts: 0 };
   if (d.pts > best.pts && d.pts >= 5) {
     store.best[store.park] = { pts: d.pts, title: d.title }; save(true); $('#best').textContent = fmt(d.pts);
-    pop($('#rec')); audio.fanfare(true); audio.say(say(d.title) + '. Nový rekord!');
-  } else { audio.fanfare(d.pts >= 30); if (!d.small) audio.say(say(d.title)); }
+    pop($('#rec')); audio.fanfare(true);
+  } else audio.fanfare(d.pts >= 30);
+  world.fx('trick', d);
   if (/SALTO|FLAIR/.test(d.title)) tutorial.event('flip');
 }
 $('#done').onclick = () => { if (screen !== 'play') return; click(); endRide(); };
@@ -167,8 +182,6 @@ function endRide() {
   $('#resBest').innerHTML = session.best.pts ? `Nejlepší trik: <b>${session.best.title}</b> za ${fmt(session.best.pts)}` : 'Příště zkus skočit a udělat salto!';
   $('#resAll').innerHTML = `Celkem máš <b>${fmt(store.total)}</b> ${flamesWord(store.total)}`;
   const u = $('#resUnlock'); u.hidden = !unlocked.length; u.textContent = unlocked.length ? `Odemčeno: ${unlocked.map((v) => v.name).join(', ')}!` : '';
-  audio.say(session.flames ? `Máš ${session.flames} ${flamesWord(session.flames)}!` : 'Hotovo!');
-  if (unlocked.length) setTimeout(() => audio.say('Odemkl jsi ' + unlocked.map((v) => v.name).join(' a ')), 2200);
 }
 $('#resAgain').onclick = () => { click(); startRide(); };
 $('#resMenu').onclick = () => { click(); show('title'); };
@@ -231,7 +244,7 @@ function frame(now) {
   } else if (screen === 'rider' || screen === 'vehicle') {
     model.root.visible = true;
     const a = clock * 0.55 + 0.6, f = [Math.cos(a), 0, Math.sin(a)];
-    opts = { mode: 'menu', model, frame: { pos: [track.spawnX, 0, 0], f, u: [0, 1, 0], s: [-f[2], 0, f[0]] }, pose: { ...idlePose, crouch: 0.15 + 0.04 * Math.sin(clock * 2.2) }, RS, wheel: 0 };
+    opts = { mode: 'menu', model, frame: { pos: [track.spawnX, track.groundAt(track.spawnX).y, 0], f, u: [0, 1, 0], s: [-f[2], 0, f[0]] }, pose: { ...idlePose, crouch: 0.15 + 0.04 * Math.sin(clock * 2.2) }, RS, wheel: 0 };
   } else { if (model) model.root.visible = false; opts = { mode: 'title' }; }
   world.update(dt, opts);
   requestAnimationFrame(frame);
@@ -254,4 +267,4 @@ function hudFrame() {
 show('title');
 $('#boot').style.opacity = 0; setTimeout(() => $('#boot').remove(), 450);
 requestAnimationFrame((t) => { last = t; frame(t); });
-window.__game = { store, track, world, get sim() { return sim; }, show, startRide, endRide, onEvent };
+window.__game = { store, get track() { return track; }, setPark, world, get sim() { return sim; }, show, startRide, endRide, onEvent };

@@ -29,10 +29,15 @@ Na počítači: šipky, mezerník = SKOK, X = TURBO/TRIK. Funguje i herní ovlad
 
 - Vojtův postup: panáček → kolo nebo koloběžka → hřiště → a jde se hrát.
 - 4 panáčci (Vojta, Ninja Nik, Robot Bolt, Dino Rex), 8 vozidel (2 hned, další se odemykají plamínky).
-- Městský skatepark: quarter pipy, pumptrack, malý a mega skok, funbox se zábradlím, ledge, 4 ohnivé kruhy.
+- 4 hřiště:
+  - **Městský skatepark:** quarter pipy, pumptrack, malý a mega skok, funbox se zábradlím, ledge.
+  - **Dino džungle:** dřevěné rampy, obří hrby, spine, kmen na grind, skok tlamou T-rexe, sopka a brontosauři.
+  - **FMX poušť:** hliněné vlnky, double, step-up na plošinu a velký skok z ocelové rampy.
+  - **Mega rampa:** noční aréna, 26 m rozjezdová věž, obří skok a 7 m quarter pipe.
+- Sponzor BoardBeat na úvodní obrazovce a na bannerech ve všech hřištích.
 - Plamínky podle Vojtových pravidel (kruh 4, vývrtka 6, flair 7 a 8), kombo násobič, rekordy.
 - Plamínková obrazovka na konci jízdy.
-- Hudba, zvuky a český hlasatel (pokud má zařízení český hlas).
+- Hudba a zvuky. Český hlasatel mluví jen v menu (pokud má zařízení český hlas), při jízdě neruší.
 
 ## Pro vývojáře
 
