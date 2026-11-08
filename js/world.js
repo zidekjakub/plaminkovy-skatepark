@@ -1,8 +1,8 @@
-import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import * as THREE from '../vendor/three/build/three.module.min.js';
+import { EffectComposer } from '../vendor/three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '../vendor/three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from '../vendor/three/examples/jsm/postprocessing/OutputPass.js';
 import { T } from './track.js';
 import { rng } from './art.js';
 
@@ -92,13 +92,13 @@ export function createWorld(canvas, track, art) {
     }
   }
   // fire rings
-  const ringLights = [];
+  // two fire lights follow the two rings nearest the camera (cheaper than four on a phone)
+  const ringLights = [0, 1].map(() => { const pl = new THREE.PointLight(0xff7a2a, 26, 0, 2); scene.add(pl); return pl; });
   for (const r of track.rings) {
     const m = new THREE.Mesh(new THREE.TorusGeometry(r.r, 0.085, 20, 80), new THREE.MeshStandardMaterial({ color: 0x2a160e, metalness: 0.7, roughness: 0.35, emissive: 0xff5a14, emissiveIntensity: 1.6 }));
     if (r.axis === 'x') m.rotation.y = Math.PI / 2; else m.rotation.x = Math.PI / 2;
     m.position.set(r.x, r.y, 0); scene.add(m);
     if (r.axis === 'x') { const zb = -W / 2 - 0.45; stick(M.dark, [r.x, G, zb], [r.x, r.y, zb], 0.06); stick(M.dark, [r.x, r.y, zb], [r.x, r.y, -r.r - 0.05], 0.045); }
-    const pl = new THREE.PointLight(0xff7a2a, 26, 0, 2); pl.position.set(r.x, r.y, 0.3); scene.add(pl); ringLights.push(pl);
   }
   /* ground, back walls, fence, floodlights */
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ map: tex(art.concrete, [120, 120]), color: 0x2a2440, roughness: 0.95 })); ground.rotation.x = -Math.PI / 2; ground.position.y = G; ground.receiveShadow = true; scene.add(ground);
@@ -130,8 +130,8 @@ export function createWorld(canvas, track, art) {
       const t = winT.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.needsUpdate = true;
       const m = new THREE.Mesh(mergeBoxes(geos), new THREE.MeshStandardMaterial({ color: 0x0e0a1e, roughness: 0.9, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 1.3 })); scene.add(m); } }
   /* a row of trees between the park and the city */
-  { const R = rng(77), n = 56, trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.14, 0.2, 2.0, 6), new THREE.MeshStandardMaterial({ color: 0x3a2440, roughness: 0.9 }), n),
-      crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.35, 0), new THREE.MeshStandardMaterial({ color: 0x3b2a5e, roughness: 0.95, flatShading: true }), n), o = new THREE.Object3D();
+  { const R = rng(77), n = 56, trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.14, 0.2, 2.0, 6), new THREE.MeshStandardMaterial({ color: 0x45305a, roughness: 0.9 }), n),
+      crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.35, 0), new THREE.MeshStandardMaterial({ color: 0x55407e, roughness: 0.95, flatShading: true }), n), o = new THREE.Object3D();
     for (let i = 0; i < n; i++) { const x = -40 + i * ((L + 80) / n) + R() * 3, z = -36 - R() * 12, sc = 0.9 + R() * 0.8;
       o.position.set(x, G + 1.0 * sc, z); o.scale.setScalar(sc); o.rotation.set(0, R() * 6, 0); o.updateMatrix(); trunk.setMatrixAt(i, o.matrix);
       o.position.set(x, G + (2.0 + 1.0) * sc, z); o.scale.set(sc * (1 + R() * 0.3), sc * (1.15 + R() * 0.4), sc); o.updateMatrix(); crown.setMatrixAt(i, o.matrix); }
@@ -174,13 +174,15 @@ export function createWorld(canvas, track, art) {
   const R3 = (a) => (Math.random() - 0.5) * a;
 
   /* post */
-  const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 });
+  const ext = renderer.extensions, hdr = renderer.capabilities.isWebGL2 && (ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float'));
+  const rt = new THREE.WebGLRenderTarget(4, 4, { type: hdr ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: renderer.capabilities.isWebGL2 ? 4 : 0 });
   const composer = new EffectComposer(renderer, rt); composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.7, 0.55, 0.86); composer.addPass(bloom); composer.addPass(new OutputPass());
   let W2 = 1, H2 = 1, pr = 1;
+  let quality = 1, lastSize = [1, 1, 1];
   function resize(w, h, dpr) {
-    W2 = w; H2 = h;
-    pr = Math.min(dpr, 2); if (w * h * pr * pr > 2.4e6) pr = Math.sqrt(2.4e6 / (w * h));
+    W2 = w; H2 = h; lastSize = [w, h, dpr];
+    pr = Math.min(dpr, 2) * quality; if (w * h * pr * pr > 2.4e6) pr = Math.sqrt(2.4e6 / (w * h)); pr = Math.max(1, pr);
     renderer.setPixelRatio(pr); renderer.setSize(w, h, false); composer.setPixelRatio(pr); composer.setSize(w, h);
     camera.aspect = w / h; camera.updateProjectionMatrix();
     const sc = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))); flames.mat.uniforms.scale.value = sc; sparks.mat.uniforms.scale.value = sc;
@@ -205,13 +207,13 @@ export function createWorld(canvas, track, art) {
   }
 
   /* per-frame */
-  let riderZ = 0;
+  let riderZ = 0; const turboV = new THREE.Vector3();
   function update(dt, opts) {
     time += dt;
     const { mode, rider, model, frame } = opts;
     // camera
     if (mode === 'play' && rider) follow(rider, dt);
-    else if (mode === 'menu') { const x = track.spawnX; tp.set(x + 2.4, 1.55, 5.4); tt.set(x - 0.1, 1.05, 0); }
+    else if (mode === 'menu') { const x = track.spawnX; tp.set(x + 2.7, 1.15, 6.6); tt.set(x - 0.1, 0.32, 0); }
     else { const x = 64 + 62 * Math.sin(time * 0.035); tp.set(x - 4, 6.2, 17); tt.set(x + 2, 1.6, -1); }
     applyCam(dt, opts.snap);
     menuRing.visible = mode === 'menu';
@@ -222,7 +224,7 @@ export function createWorld(canvas, track, art) {
       riderZ += (zt - riderZ) * Math.min(1, dt * 7);
       const f2 = { pos: [frame.pos[0], frame.pos[1], frame.pos[2] + riderZ], f: frame.f, u: frame.u, s: frame.s };
       model.update(f2, opts.pose, opts.RS, opts.wheel, dt);
-      if (rider && rider.turboOn) { const p = new THREE.Vector3(-0.34, 0.1, 0).applyMatrix4(model.root.matrix);
+      if (rider && rider.turboOn) { const p = turboV.set(-0.34, 0.1, 0).applyMatrix4(model.root.matrix);
         for (let i = 0; i < 3; i++) sparks.spawn([p.x, p.y, p.z], [-frame.f[0] * 4 + R3(1), -frame.f[1] * 4 + R3(1), R3(1)], 0.22 + Math.random() * 0.18, 0.32, 0.5, [2.2, 0.9, 0.25]); }
       if (rider && rider.mode === 'grind') for (let i = 0; i < 2; i++) sparks.spawn([rider.x, rider.y, riderZ], [-rider.v * 0.3 + R3(2), 1 + Math.random() * 2.5, R3(1.5)], 0.3 + Math.random() * 0.3, 0.06, -9.8, [3, 2.3, 1.0]);
     }
@@ -235,7 +237,8 @@ export function createWorld(canvas, track, art) {
       const p = r.axis === 'x' ? [r.x + R3(0.1), r.y + rr * Math.sin(a), rr * Math.cos(a)] : [r.x + rr * Math.cos(a), r.y + R3(0.1), rr * Math.sin(a)];
       flames.spawn(p, [R3(0.3), 1.1 + Math.random() * 1.3, R3(0.3)], 0.45 + Math.random() * 0.45, 0.38 + Math.random() * 0.3, 0.8); }
     flames.step(dt); sparks.step(dt);
-    ringLights.forEach((l, i) => { l.intensity = 22 + 6 * Math.sin(time * 23 + i) + 4 * Math.sin(time * 37 + i * 2); });
+    const near = track.rings.map((r, i) => [Math.abs(r.x - cam.tgt.x), i]).sort((a, b) => a[0] - b[0]);
+    ringLights.forEach((l, k) => { const r = track.rings[near[k][1]]; l.position.set(r.x, r.y, 0.3); l.intensity = 22 + 6 * Math.sin(time * 23 + k) + 4 * Math.sin(time * 37 + k * 2); });
     composer.render(dt);
   }
   function fx(type, d) {
@@ -247,7 +250,9 @@ export function createWorld(canvas, track, art) {
   const pv = new THREE.Vector3();
   function project(p) { pv.set(p[0], p[1], p[2] + riderZ).project(camera); return { x: (pv.x + 1) / 2 * W2, y: (1 - pv.y) / 2 * H2 }; }
   function snapNext() { cam.init = false; }
-  return { scene, camera, renderer, resize, update, fx, project, snapNext, refreshTextures: () => texs.forEach((t) => (t.needsUpdate = true)) };
+  // lower the render resolution a step if the phone cannot keep up
+  function setQuality(q) { if (q === quality) return; quality = q; resize(...lastSize); }
+  return { scene, camera, renderer, resize, update, fx, project, snapNext, setQuality, get quality() { return quality; }, refreshTextures: () => texs.forEach((t) => (t.needsUpdate = true)) };
 }
 
 function mergeBoxes(geos) {

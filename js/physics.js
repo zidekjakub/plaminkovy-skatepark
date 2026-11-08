@@ -50,6 +50,7 @@ export class Rider {
     else if (this.mode === 'vert') this.vertStep(dt, inp);
     else if (this.mode === 'grind') this.grindStep(dt, inp);
     else if (this.mode === 'crash') this.crashStep(dt);
+    this.lastX = inp.x;
     this.wheel += (this.mode === 'ground' || this.mode === 'grind' ? this.v : this.vx * 0.3) * dt / 0.07;
     if (this.turning) { this.turning = Math.max(0, this.turning - dt / 0.28); this.turnYaw = Math.PI * (1 - this.turning); if (!this.turning) { this.facing = -this.facing; this.turnYaw = 0; } }
   }
@@ -126,6 +127,7 @@ export class Rider {
   newAir(vert) { return { t: 0, R: 0, facing0: this.facing, spins: 0, spinQ: 0, spinT: 0, styles: [], style: null, styleQ: 0, rings: new Set(), vert }; }
   enterAir(big) {
     if (this.turning) { this.turning = 0; this.turnYaw = 0; this.facing = Math.sign(this.vx) || this.facing; }
+    this.capLaunch(); this.heldDir = this.lastX || 0;
     this.mode = 'air'; this.air = this.newAir(false); this.omega = 0;
     this.emit('takeoff', { x: this.x, y: this.y, big });
   }
@@ -135,19 +137,41 @@ export class Rider {
     this.mode = 'vert'; this.side = side; this.vx = 0; this.vy = vy;
     this.x = side > 0 ? this.track.L : 0; this.y = T.H; this.vT = 2 * vy / G;
     if (this.turning) { this.turning = 0; this.turnYaw = 0; this.facing = side; }
-    this.facing = side;
+    this.facing = side; this.heldDir = this.lastX || 0;
     this.air = this.newAir(true); this.omega = 0; this.phi = side > 0 ? Math.PI / 2 : -Math.PI / 2;
     this.emit('takeoff', { x: this.x, y: this.y, big: true, vert: true });
   }
 
   /* ---------- flying ---------- */
+  capLaunch() {
+    // no rocket launches: a steep ollie on turbo would otherwise fly off the screen
+    this.vy = Math.min(this.vy, 9.6); this.vx = clamp(this.vx, -19, 19);
+  }
   rotate(dt, inp, upright) {
     const st = this.st;
+    // an arrow that was already held for riding when he left the ground does not flip him
+    let ix = inp.x;
+    if (this.heldDir) { if (ix === this.heldDir) ix = 0; else this.heldDir = 0; }
     let target;
-    if (inp.x) target = -inp.x * st.rot;
-    else { const goal = upright + TAU * Math.round((this.phi - upright) / TAU); target = clamp((goal - this.phi) * 7, -st.rot, st.rot); }
+    if (ix) target = -ix * st.rot;
+    else {
+      // Finish the flip by itself, but only if there is time before touchdown;
+      // otherwise roll back to the wheels. Kids let go early and still land.
+      const k = (this.phi - upright) / TAU;
+      let goal = upright + TAU * Math.round(k);
+      if (Math.abs(this.omega) > 1) {
+        const d = Math.sign(this.omega), fwd = upright + TAU * (d > 0 ? Math.ceil(k) : Math.floor(k)), back = upright + TAU * (d > 0 ? Math.floor(k) : Math.ceil(k));
+        const tl = this.timeToLand(), tF = Math.abs(fwd - this.phi) / st.rot, tB = Math.abs(back - this.phi) / st.rot + 0.1;
+        goal = tF <= tl * 0.92 || tF <= tB ? fwd : back;
+      }
+      target = clamp((goal - this.phi) * 9, -st.rot, st.rot);
+    }
     this.omega += (target - this.omega) * Math.min(1, dt * 14);
     this.phi += this.omega * dt; this.air.R += this.omega * dt;
+  }
+  timeToLand() {
+    const h = this.mode === 'vert' ? this.y - T.H : this.y - this.track.groundAt(this.x + this.vx * 0.15).y;
+    return (this.vy + Math.sqrt(Math.max(0, this.vy * this.vy + 2 * G * Math.max(0, h)))) / G;
   }
   tricks(dt, inp) {
     const a = this.air, st = this.st;
@@ -228,7 +252,8 @@ export class Rider {
   }
   land(g) {
     const n = Math.atan2(g.ty, g.tx);
-    if (Math.abs(wrap(this.phi - n)) > LAND_OK) { this.y = g.y; this.crash(); return; }
+    const intoTransition = Math.abs(wrap(this.phi)) < 0.5 && Math.abs(n) > 0.55; // flying upright into a curved ramp is riding, not falling
+    if (Math.abs(wrap(this.phi - n)) > LAND_OK && !intoTransition) { this.y = g.y; this.crash(); return; }
     this.phi = this.near(n, this.phi);
     let v = this.vx * g.tx + this.vy * g.ty;
     this.v = v; this.s = g.s; this.y = g.y; this.mode = 'ground';
@@ -284,7 +309,7 @@ export class Rider {
       if (this.grindT > 0.25) this.emit('trick', { title: 'GRIND', ring: 0, parts: [SCORE.grind], mult: 1, pts: SCORE.grind, small: true });
       this.emit('grindEnd');
       this.vx = this.v; this.vy = this.jumpBuf > 0 ? this.st.pop : 0.4; this.jumpBuf = 0;
-      this.mode = 'air'; this.air = this.newAir(false); this.rail = null;
+      this.mode = 'air'; this.air = this.newAir(false); this.rail = null; this.heldDir = this.lastX || 0; this.capLaunch();
     }
   }
   /* ---------- crash ---------- */

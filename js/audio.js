@@ -3,9 +3,14 @@ export function createAudio(settings) {
   let ctx = null, master, sfxBus, musicBus, noise, rollG, rollF, grindG, grindF, seqTimer = null, step = 0, nextT = 0;
   const S = settings;
   function init() {
-    if (ctx) { ctx.resume?.(); return; }
+    // play even when the iPhone's silent switch is on (iOS 17+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
+    if (ctx) { if (ctx.state !== 'running') ctx.resume?.(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     ctx = new AC();
+    // iOS suspends or "interrupts" audio after calls and app switches; wake it on the next touch
+    const wake = () => { if (ctx && ctx.state !== 'running') ctx.resume?.(); };
+    addEventListener('pointerdown', wake, true); addEventListener('keydown', wake, true);
     master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
     sfxBus = ctx.createGain(); sfxBus.gain.value = S.sfx ? 1 : 0; sfxBus.connect(master);
     musicBus = ctx.createGain(); musicBus.gain.value = S.music ? 0.32 : 0; musicBus.connect(master);
@@ -28,10 +33,17 @@ export function createAudio(settings) {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f).connect(g).connect(bus); s.start(t, Math.random()); s.stop(t + dur + 0.05);
   }
+  let lastRoll = [-1, -1, -1];
   function rolling(speed, grounded, grinding) {
-    if (!ctx) return; const t = now();
-    rollG.gain.setTargetAtTime(grounded ? Math.min(0.22, speed * 0.018) : 0, t, 0.05); rollF.frequency.setTargetAtTime(250 + speed * 45, t, 0.05);
-    grindG.gain.setTargetAtTime(grinding ? 0.12 : 0, t, 0.03);
+    if (!ctx) return;
+    // only touch the audio graph when something audible changes (iOS keeps every automation event)
+    const g = grounded ? Math.round(Math.min(0.22, speed * 0.018) * 100) / 100 : 0, f = Math.round((250 + speed * 45) / 25) * 25, gr = grinding ? 1 : 0;
+    if (g === lastRoll[0] && f === lastRoll[1] && gr === lastRoll[2]) return;
+    const t = now();
+    if (g !== lastRoll[0]) rollG.gain.setTargetAtTime(g, t, 0.05);
+    if (f !== lastRoll[1]) rollF.frequency.setTargetAtTime(f, t, 0.05);
+    if (gr !== lastRoll[2]) grindG.gain.setTargetAtTime(gr ? 0.12 : 0, t, 0.03);
+    lastRoll = [g, f, gr];
   }
   // music: a short, upbeat loop in A minor (Am F C G)
   const chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
@@ -68,7 +80,15 @@ export function createAudio(settings) {
     crash: () => { hiss(600, 80, 0.5, 0.45, 'lowpass'); tone('sine', 400, 60, 0.6, 0.35); },
     turbo: () => { tone('sawtooth', 70, 260, 0.9, 0.14); hiss(400, 2500, 0.9, 0.18); },
     click: () => tone('triangle', 880, 1200, 0.07, 0.12),
-    say(text) { if (!S.voice || !voice || !('speechSynthesis' in window)) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.voice = voice; u.lang = voice.lang; u.rate = 1.12; u.pitch = 1.15; speechSynthesis.speak(u); } catch (_) {} },
+    say(text) {
+      if (!S.voice || !voice || !('speechSynthesis' in window)) return;
+      try {
+        const u = new SpeechSynthesisUtterance(text); u.voice = voice; u.lang = voice.lang; u.rate = 1.12; u.pitch = 1.15;
+        // iOS drops an utterance spoken right after cancel(), so give it a moment
+        if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(u), 80); }
+        else speechSynthesis.speak(u);
+      } catch (_) {}
+    },
     apply() { if (!ctx) return; sfxBus.gain.value = S.sfx ? 1 : 0; musicBus.gain.value = S.music ? 0.32 : 0; },
     suspend() { ctx?.suspend?.(); }, resume() { ctx?.resume?.(); },
   };

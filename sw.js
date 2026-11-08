@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION whenever any file changes so phones pick up the new game.
-const VERSION = 'plaminky-v1';
+const VERSION = 'plaminky-v2';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/data.js', './js/track.js', './js/physics.js', './js/rig.js', './js/art.js', './js/world.js', './js/riderModel.js', './js/input.js', './js/audio.js', './js/results.js',

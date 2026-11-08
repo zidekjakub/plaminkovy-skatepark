@@ -14,6 +14,7 @@ const store = (() => { const d = { total: 0, best: {}, rider: 'vojta', vehicle: 
   try { return Object.assign(d, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { return d; } })();
 let saveT = 0; const save = (now) => { if (!now && performance.now() - saveT < 1500) return; saveT = performance.now(); try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (_) {} };
 const RS = 1.25, fmt = (n) => n.toLocaleString('cs-CZ');
+const flamesWord = (n) => (n === 1 ? 'plamínek' : n >= 2 && n <= 4 ? 'plamínky' : 'plamínků');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 
@@ -44,7 +45,7 @@ function show(name) {
   for (const [k, sel] of Object.entries(SCREENS)) $(sel).hidden = k !== name;
   hud.hidden = name !== 'play' && name !== 'results';
   $$('.tot').forEach((e) => (e.textContent = fmt(store.total)));
-  $('#totalTitle').textContent = fmt(store.total);
+  $('#totalTitle').textContent = fmt(store.total); $('#totalTitle').nextElementSibling.textContent = flamesWord(store.total) + ' celkem';
   if (name === 'rider') renderRider();
   if (name === 'vehicle') renderVehicle();
   if (name === 'park') renderParks();
@@ -113,22 +114,23 @@ function startRide() {
   ensureModel(riderDef(), vehDef());
   sim = new Rider(track, vehDef(), onEvent);
   session = { flames: 0, shown: 0, best: { pts: 0, title: '' }, startTotal: store.total };
-  num.textContent = '0'; $('#best').textContent = fmt((store.best[store.park] || {}).pts || 0);
+  num.textContent = '0'; unitEl.textContent = flamesWord(0); $('#best').textContent = fmt((store.best[store.park] || {}).pts || 0);
   input.clear(); paused = false;
   show('play'); world.snapNext();
   audio.init(); audio.say('A jde se hrát!');
   tutorial.start();
 }
-function setCount() { num.textContent = fmt(session.shown); num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); }
+const unitEl = $('#counter .unit');
+function setCount() { num.textContent = fmt(session.shown); unitEl.textContent = flamesWord(session.shown); num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); }
 function pop(el) { el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 function tag(text, p, cls = '') { const t = $('#tag'); t.className = 'tag ' + cls; t.textContent = text; t.style.setProperty('--x', p.x + 'px'); t.style.setProperty('--y', p.y + 'px'); pop(t); }
 function fly(from, to, add, delay) {
-  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.setAttribute('viewBox', '0 0 40 52'); el.setAttribute('class', 'fly'); el.innerHTML = '<use href="#flame"/>'; hud.appendChild(el);
+  const ses = session, el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.setAttribute('viewBox', '0 0 40 52'); el.setAttribute('class', 'fly'); el.innerHTML = '<use href="#flame"/>'; hud.appendChild(el);
   const mx = from.x + (to.x - from.x) * 0.35 + (Math.random() - 0.5) * 80, my = Math.min(from.y, to.y) - 40 - Math.random() * 50;
   const an = el.animate([{ transform: `translate(${from.x}px,${from.y}px) scale(.4)`, opacity: 0 }, { transform: `translate(${mx}px,${my}px) scale(1.25)`, opacity: 1, offset: 0.4 }, { transform: `translate(${to.x}px,${to.y}px) scale(.7)`, opacity: 1 }], { duration: 650 + Math.random() * 200, delay, easing: 'ease-in', fill: 'backwards' });
-  an.onfinish = () => { el.remove(); if (session) { session.shown += add; setCount(); } audio.coin(); };
+  an.onfinish = () => { el.remove(); if (ses === session) { session.shown += add; setCount(); audio.coin(); } };
 }
-const say = (title) => title.replace(/ \+ /g, ' a ').replace('×', 'krát').toLowerCase();
+const say = (title) => title.replace(/ \+ /g, ' a ').replace(/ ×(\d+)/g, ' $1 krát').toLowerCase();
 function onEvent(type, d) {
   if (type === 'takeoff') { world.fx('takeoff', d); audio.takeoff(d.big); tutorial.event('takeoff'); }
   else if (type === 'land') { world.fx('land', d); audio.land(d.hard); }
@@ -151,21 +153,21 @@ function scored(d) {
   const best = store.best[store.park] || { pts: 0 };
   if (d.pts > best.pts && d.pts >= 5) {
     store.best[store.park] = { pts: d.pts, title: d.title }; save(true); $('#best').textContent = fmt(d.pts);
-    pop($('#rec')); audio.fanfare(true); setTimeout(() => audio.say('Nový rekord!'), 700); audio.say(say(d.title));
+    pop($('#rec')); audio.fanfare(true); audio.say(say(d.title) + '. Nový rekord!');
   } else { audio.fanfare(d.pts >= 30); if (!d.small) audio.say(say(d.title)); }
   if (/SALTO|FLAIR/.test(d.title)) tutorial.event('flip');
 }
 $('#done').onclick = () => { if (screen !== 'play') return; click(); endRide(); };
 function endRide() {
-  save(true);
+  save(true); input.clear();
   const unlocked = VEHICLES.filter((v) => v.unlock > session.startTotal && v.unlock <= store.total);
   show('results'); tutorial.stop();
   const tot = $('#resTotal');
   flameScreen($('#flameCanvas'), session.flames, (e) => (tot.textContent = fmt(Math.round(session.flames * e))));
   $('#resBest').innerHTML = session.best.pts ? `Nejlepší trik: <b>${session.best.title}</b> za ${fmt(session.best.pts)}` : 'Příště zkus skočit a udělat salto!';
-  $('#resAll').innerHTML = `Celkem máš <b>${fmt(store.total)}</b> plamínků`;
+  $('#resAll').innerHTML = `Celkem máš <b>${fmt(store.total)}</b> ${flamesWord(store.total)}`;
   const u = $('#resUnlock'); u.hidden = !unlocked.length; u.textContent = unlocked.length ? `Odemčeno: ${unlocked.map((v) => v.name).join(', ')}!` : '';
-  audio.say(session.flames ? `Máš ${session.flames} plamínků!` : 'Hotovo!');
+  audio.say(session.flames ? `Máš ${session.flames} ${flamesWord(session.flames)}!` : 'Hotovo!');
   if (unlocked.length) setTimeout(() => audio.say('Odemkl jsi ' + unlocked.map((v) => v.name).join(' a ')), 2200);
 }
 $('#resAgain').onclick = () => { click(); startRide(); };
@@ -202,11 +204,21 @@ const canvas = $('#gl');
 function resize() { world.resize(innerWidth, innerHeight, window.devicePixelRatio || 1); }
 addEventListener('resize', resize); resize();
 document.addEventListener('visibilitychange', () => (document.hidden ? audio.suspend() : audio.resume()));
-let last = performance.now(), clock = 0;
+let last = performance.now(), clock = 0, slow = 0;
+const portrait = matchMedia('(orientation: portrait) and (max-width: 900px)');
+// iOS may drop the 3D context after a long time in the background: start fresh
+canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); save(true); });
+canvas.addEventListener('webglcontextrestored', () => location.reload());
 const idlePose = { crouch: 0.15, whip: 0, bar: 0, sm: 0, nh: 0, feetUp: 0 };
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
   let opts;
+  if (portrait.matches) { requestAnimationFrame(frame); return; } // the rotate-phone screen is up
+  if (screen === 'play') {
+    // keep 60 fps: step the resolution down if frames keep running long
+    slow = dt > 1 / 45 ? slow + dt : Math.max(0, slow - dt * 0.5);
+    if (slow > 2.5 && world.quality > 0.6) { world.setQuality(world.quality > 0.85 ? 0.8 : 0.62); slow = 0; }
+  }
   if ((screen === 'play' || screen === 'results') && sim) {
     if (screen === 'play' && !paused) {
       const inp = input.read(), sub = Math.max(1, Math.ceil(dt / (1 / 120)));
@@ -224,9 +236,11 @@ function frame(now) {
   world.update(dt, opts);
   requestAnimationFrame(frame);
 }
+const liveEl = $('#live'); let lastCd = '', lastAir = null;
 function hudFrame() {
-  hud.classList.toggle('air', sim.inAir);
-  const tb = input.btns.action; tb.style.setProperty('--cd', sim.turboT > 0 ? (sim.turboT / 3).toFixed(3) : (1 - Math.max(0, sim.turboCD) / 3).toFixed(3));
+  if (sim.inAir !== lastAir) { lastAir = sim.inAir; hud.classList.toggle('air', sim.inAir); }
+  const cd = (sim.turboT > 0 ? sim.turboT / 3 : Math.min(1, 1 - Math.max(0, sim.turboCD) / 3)).toFixed(2);
+  if (cd !== lastCd) { lastCd = cd; input.btns.action.style.setProperty('--cd', cd); }
   let live = '';
   if (sim.inAir && sim.air) {
     const n = Math.floor(Math.abs(sim.air.R) / (Math.PI * 2) + 0.15), sp = sim.air.spins + (sim.air.spinT > 0.5 ? 1 : 0), parts = [];
@@ -234,7 +248,7 @@ function hudFrame() {
     sim.air.styles.forEach((s) => parts.push(s === 'tailwhip' ? 'TAILWHIP' : s === 'barspin' ? 'BARSPIN' : s === 'superman' ? 'SUPERMAN' : 'BEZ RUKOU'));
     live = parts.join(' + ');
   }
-  const le = $('#live'); if (le.textContent !== live) le.textContent = live;
+  if (liveEl.textContent !== live) liveEl.textContent = live;
 }
 
 show('title');

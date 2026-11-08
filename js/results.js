@@ -27,8 +27,9 @@ export function flameScreen(canvas, count, onProgress) {
   const tick = (now) => {
     const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 2), k = Math.floor(N * e);
     for (let i = drawn; i < k; i++) {
-      const row = Math.floor(i / cols), col = row % 2 ? cols - 1 - (i % cols) : i % cols;
-      g.drawImage(spr, ox + col * s, h - (row + 1) * s, s, s);
+      const row = Math.floor(i / cols), inRow = Math.min(cols, N - row * cols), shift = (cols - inRow) * s / 2;
+      const col = row % 2 ? inRow - 1 - (i % cols) : i % cols;
+      g.drawImage(spr, ox + shift + col * s, h - (row + 1) * s, s, s);
     }
     drawn = k;
     onProgress && onProgress(e);

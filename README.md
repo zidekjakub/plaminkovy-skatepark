@@ -8,6 +8,13 @@ Trikový skatepark pro Vojtu. 3D grafika s kamerou z boku, koloběžka nebo BMX,
 2. Ťukněte na **Sdílet** a pak **Přidat na plochu**.
 3. Hra se spouští ikonou z plochy přes celou obrazovku. Po prvním spuštění funguje i bez internetu.
 
+## iPhone
+
+- Laděno na iPhone 13 Pro na šířku (výřez displeje i domovská lišta mají volné místo). Funguje od iOS 15, nejlépe iOS 17 a novější.
+- Na iOS 17 a novějším hraje zvuk i se zapnutým tichým režimem. Na starším iOS je potřeba přepínač ticha vypnout.
+- Hlasatel mluví česky, pokud má iPhone český hlas (Nastavení → Zpřístupnění → Předčítaný obsah → Hlasy).
+- Když telefon nestíhá, hra sama sníží rozlišení, aby běžela plynule.
+
 ## Ovládání
 
 | Tlačítko | Na zemi | Ve vzduchu |
