@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Plamínkový skatepark</title>
+<meta name="description" content="Trikový skatepark pro Vojtu: koloběžka, BMX, salta, flair a ohnivé kruhy.">
+<meta name="theme-color" content="#100b21">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plamínky">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.min.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3b2e"/><stop offset=".55" stop-color="#ff8a1f"/><stop offset="1" stop-color="#ffe14d"/></linearGradient>
+    <symbol id="flame" viewBox="0 0 40 52"><path d="M20 51C9 51 3 43 4 34c1-7 6-11 8-17 1 5 3 8 6 9-2-9 2-18 9-25-1 8 2 13 6 18 4 5 5 10 4 15-1 10-8 17-17 17z" fill="url(#fg)" stroke="#2a0d05" stroke-width="2.4" stroke-linejoin="round"/><path d="M20 47c-5 0-8-4-7-9 1-4 4-6 5-10 2 4 5 5 6 9 2 5-1 10-4 10z" fill="#fff3a0"/></symbol>
+    <symbol id="lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="4" y="10" width="16" height="11" rx="3" fill="currentColor"/></symbol>
+    <symbol id="tri-l" viewBox="0 0 40 40"><path d="M27 8 11 20l16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
+    <symbol id="tri-r" viewBox="0 0 40 40"><path d="M13 8l16 12-16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<canvas id="gl"></canvas>
+
+<!-- in-game HUD -->
+<div id="hud" hidden>
+  <div class="bar">
+    <div class="chip" id="counter"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num" id="num">0</span><span class="unit">plamínků</span></div>
+    <div class="chip best"><small>Nejlepší trik</small><b id="best">0</b></div>
+    <button class="chip done" id="done" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V3" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M6 4h14v10H6z" fill="#fff"/><path d="M6 4h3.5v2.5H6zM13 4h3.5v2.5H13zM9.5 6.5H13V9H9.5zM16.5 6.5H20V9h-3.5zM6 9h3.5v2.5H6zM13 9h3.5v2.5H13zM9.5 11.5H13V14H9.5zM16.5 11.5H20V14h-3.5z" fill="#1c0a30"/></svg>Hotovo</button>
+  </div>
+  <div class="live" id="live"></div>
+  <div class="callout" id="callout">
+    <div class="ttl"><span class="o" id="ttlO"></span><span class="f" id="ttlF"></span></div>
+    <div class="sub" id="sub"></div>
+    <div class="pts"><svg viewBox="0 0 40 52"><use href="#flame"/></svg><span id="ptsT"></span></div>
+  </div>
+  <div class="rec" id="rec">NOVÝ REKORD!</div>
+  <div class="tag" id="tag"></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="pad l" id="padL">
+    <div class="btn arrow" data-k="left"><svg class="g" viewBox="0 0 40 40"><use href="#tri-l"/></svg><svg class="a" viewBox="0 0 40 40"><path d="M30 26A12 12 0 1 1 26 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M19 4l10 5-7 9z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+    <div class="btn arrow" data-k="right"><svg class="g" viewBox="0 0 40 40"><use href="#tri-r"/></svg><svg class="a" viewBox="0 0 40 40"><path d="M10 26A12 12 0 1 0 14 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M21 4 11 9l7 9z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+  </div>
+  <div class="pad r" id="padR">
+    <div class="btn turbo" data-k="action"><span class="t g">TURBO</span><span class="t a">TRIK</span></div>
+    <div class="btn jump" data-k="jump"><span class="t g">SKOK</span><span class="t a">VÝVRTKA</span></div>
+  </div>
+</div>
+
+<!-- title -->
+<section class="screen dim" id="sTitle" hidden>
+  <h1 class="logo">Plamínkový<small>skatepark</small></h1>
+  <div class="mid">
+    <button class="big-arrow fire" id="play" type="button"><span>HRÁT</span></button>
+    <div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num" id="totalTitle">0</span><span class="unit">plamínků celkem</span></div>
+  </div>
+  <div class="bottom">
+    <div class="toggles">
+      <button class="toggle" data-set="music" type="button" aria-pressed="true"><i></i>Hudba</button>
+      <button class="toggle" data-set="sfx" type="button" aria-pressed="true"><i></i>Zvuky</button>
+      <button class="toggle" data-set="voice" type="button" aria-pressed="true"><i></i>Hlas</button>
+    </div>
+    <div class="install" id="install" hidden>Přidej si hru na plochu: v Safari ťukni na <b>Sdílet</b> a pak <b>Přidat na plochu</b>.</div>
+  </div>
+</section>
+
+<!-- 1. rider, 2. vehicle -->
+<section class="screen pick" id="sRider" hidden>
+  <div class="head"><h2 class="step"><b>1</b>Vyber si panáčka</h2><div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num tot">0</span></div></div>
+  <div class="stage">
+    <button class="nav l" data-dir="-1" type="button" aria-label="Předchozí"><svg viewBox="0 0 40 40"><use href="#tri-l"/></svg></button>
+    <button class="nav r" data-dir="1" type="button" aria-label="Další"><svg viewBox="0 0 40 40"><use href="#tri-r"/></svg></button>
+    <div class="plate"><div class="dots"></div><h3 class="name"></h3><p class="desc"></p></div>
+  </div>
+  <div class="foot"><button class="ghost back" type="button">Zpět</button><button class="big-arrow next" type="button"><span>DÁL</span></button></div>
+</section>
+<section class="screen pick" id="sVehicle" hidden>
+  <div class="head"><h2 class="step"><b>2</b>Vyber si kolo nebo koloběžku</h2><div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num tot">0</span></div></div>
+  <div class="stage">
+    <button class="nav l" data-dir="-1" type="button" aria-label="Předchozí"><svg viewBox="0 0 40 40"><use href="#tri-l"/></svg></button>
+    <button class="nav r" data-dir="1" type="button" aria-label="Další"><svg viewBox="0 0 40 40"><use href="#tri-r"/></svg></button>
+    <div class="plate"><div class="dots"></div><h3 class="name"></h3><div class="stats"></div><p class="desc"></p></div>
+  </div>
+  <div class="foot"><button class="ghost back" type="button">Zpět</button><button class="big-arrow next" type="button"><span>DÁL</span></button></div>
+</section>
+
+<!-- 3. park -->
+<section class="screen dim" id="sPark" hidden>
+  <div class="head"><h2 class="step"><b>3</b>Vyber si hřiště</h2><div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num tot">0</span></div></div>
+  <div class="parks" id="parks"></div>
+  <div class="foot"><button class="ghost back" type="button">Zpět</button><button class="big-arrow fire next" type="button"><span>A JDE SE HRÁT!</span></button></div>
+</section>
+
+<!-- results: Vojta's flame screen -->
+<section class="screen" id="sResults" hidden>
+  <canvas id="flameCanvas"></canvas>
+  <div class="res">
+    <small>Plamínky z jízdy</small>
+    <div class="total" id="resTotal">0</div>
+    <p id="resBest"></p>
+    <p id="resAll"></p>
+    <div class="unlock" id="resUnlock" hidden></div>
+    <div class="row"><button class="ghost" id="resMenu" type="button">Menu</button><button class="big-arrow" id="resAgain" type="button"><span>JET ZNOVU</span></button></div>
+  </div>
+</section>
+
+<div id="rotate"><svg viewBox="0 0 64 64"><rect x="18" y="6" width="28" height="52" rx="6" fill="none" stroke="#ffd23f" stroke-width="4"/><circle cx="32" cy="50" r="3" fill="#ffd23f"/></svg>Otoč telefon<p>Hraje se na šířku.</p></div>
+<div id="boot">Nakládám skatepark…</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

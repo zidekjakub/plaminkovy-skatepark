@@ -1,0 +1,38 @@
+# Plamínkový skatepark
+
+Trikový skatepark pro Vojtu. 3D grafika s kamerou z boku, koloběžka nebo BMX, salta, flair, vývrtky a ohnivé kruhy. Hraje se na plamínky a bez časového limitu.
+
+## Jak hru dostat do iPhonu
+
+1. V Safari otevřete adresu hry (GitHub Pages tohoto repozitáře).
+2. Ťukněte na **Sdílet** a pak **Přidat na plochu**.
+3. Hra se spouští ikonou z plochy přes celou obrazovku. Po prvním spuštění funguje i bez internetu.
+
+## Ovládání
+
+| Tlačítko | Na zemi | Ve vzduchu |
+| --- | --- | --- |
+| ◀ ▶ | jízda a brzda | točení salta |
+| SKOK | výskok, na hraně rampy vyletí výš | vývrtka |
+| TURBO / TRIK | turbo na 3 sekundy | tailwhip, barspin, superman, bez rukou |
+
+Na počítači: šipky, mezerník = SKOK, X = TURBO/TRIK. Funguje i herní ovladač.
+
+## Co hra umí (Fáze 1)
+
+- Vojtův postup: panáček → kolo nebo koloběžka → hřiště → a jde se hrát.
+- 4 panáčci (Vojta, Ninja Nik, Robot Bolt, Dino Rex), 8 vozidel (2 hned, další se odemykají plamínky).
+- Městský skatepark: quarter pipy, pumptrack, malý a mega skok, funbox se zábradlím, ledge, 4 ohnivé kruhy.
+- Plamínky podle Vojtových pravidel (kruh 4, vývrtka 6, flair 7 a 8), kombo násobič, rekordy.
+- Plamínková obrazovka na konci jízdy.
+- Hudba, zvuky a český hlasatel (pokud má zařízení český hlas).
+
+## Pro vývojáře
+
+Čisté HTML, CSS a JavaScript moduly bez build kroku. 3D je Three.js r160 (ve složce `vendor`), písma jsou ve složce `fonts`. Lokálně stačí:
+
+```bash
+python3 -m http.server 8000
+```
+
+Po každé změně souborů zvyšte `VERSION` v `sw.js`, aby si telefony stáhly novou verzi.
