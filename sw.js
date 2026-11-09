@@ -1,8 +1,8 @@
 // Offline cache. Bump VERSION whenever any file changes so phones pick up the new game.
-const VERSION = 'plaminky-v3';
+const VERSION = 'plaminky-v4';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
-  './js/main.js', './js/data.js', './js/track.js', './js/physics.js', './js/rig.js', './js/art.js', './js/world.js', './js/riderModel.js', './js/input.js', './js/audio.js', './js/results.js', './js/parks.js',
+  './js/main.js', './js/data.js', './js/track.js', './js/physics.js', './js/rig.js', './js/art.js', './js/world.js', './js/riderModel.js', './js/input.js', './js/audio.js', './js/results.js', './js/parks.js', './js/reading.js', './js/texts.js',
   './vendor/three/build/three.module.min.js',
   './vendor/three/examples/jsm/postprocessing/EffectComposer.js', './vendor/three/examples/jsm/postprocessing/RenderPass.js', './vendor/three/examples/jsm/postprocessing/UnrealBloomPass.js',
   './vendor/three/examples/jsm/postprocessing/OutputPass.js', './vendor/three/examples/jsm/postprocessing/Pass.js', './vendor/three/examples/jsm/postprocessing/ShaderPass.js', './vendor/three/examples/jsm/postprocessing/MaskPass.js',

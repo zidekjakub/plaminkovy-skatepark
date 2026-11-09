@@ -25,6 +25,8 @@
     <symbol id="lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="4" y="10" width="16" height="11" rx="3" fill="currentColor"/></symbol>
     <linearGradient id="bbg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2ad1ff"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>
     <symbol id="boardbeat" viewBox="0 0 300 90"><rect x="3" y="3" width="294" height="84" rx="42" fill="#14102a" stroke="#2ad1ff" stroke-width="6"/><g fill="url(#bbg)"><rect x="34" y="32" width="9" height="26" rx="4.5"/><rect x="48" y="24" width="9" height="42" rx="4.5"/><rect x="62" y="17" width="9" height="56" rx="4.5"/><rect x="76" y="27" width="9" height="36" rx="4.5"/><rect x="90" y="21" width="9" height="48" rx="4.5"/></g><text x="110" y="58" font-family="Bungee, 'Arial Black', sans-serif" font-size="30" fill="#fff">BOARD<tspan fill="#ff4fa3">BEAT</tspan></text></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="9" fill="#fff3a6" stroke="#2a0d05" stroke-width="2"/><path d="M12 8v5l3.2 2" fill="none" stroke="#2a0d05" stroke-width="2.4" stroke-linecap="round"/><path d="M9 2.5h6" stroke="#fff3a6" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="book" viewBox="0 0 32 24"><path d="M16 5C12 2 6 2 2 3v18c4-1 10-1 14 2 4-3 10-3 14-2V3c-4-1-10-1-14 2z" fill="#fff3a6" stroke="#2a0d05" stroke-width="2" stroke-linejoin="round"/><path d="M16 5v18" stroke="#2a0d05" stroke-width="2"/></symbol>
     <symbol id="tri-l" viewBox="0 0 40 40"><path d="M27 8 11 20l16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
     <symbol id="tri-r" viewBox="0 0 40 40"><path d="M13 8l16 12-16 12z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></symbol>
   </defs>
@@ -36,7 +38,7 @@
 <div id="hud" hidden>
   <div class="bar">
     <div class="chip" id="counter"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num" id="num">0</span><span class="unit">plamínků</span></div>
-    <div class="chip best"><small>Nejlepší trik</small><b id="best">0</b></div>
+    <div class="mid-chips"><div class="chip best"><small>Nejlepší trik</small><b id="best">0</b></div><div class="chip clock" id="clock"><svg viewBox="0 0 24 24"><use href="#clock"/></svg><b id="clockT">4:00</b></div></div>
     <button class="chip done" id="done" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V3" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M6 4h14v10H6z" fill="#fff"/><path d="M6 4h3.5v2.5H6zM13 4h3.5v2.5H13zM9.5 6.5H13V9H9.5zM16.5 6.5H20V9h-3.5zM6 9h3.5v2.5H6zM13 9h3.5v2.5H13zM9.5 11.5H13V14H9.5zM16.5 11.5H20V14h-3.5z" fill="#1c0a30"/></svg>Hotovo</button>
   </div>
   <div class="live" id="live"></div>
@@ -46,6 +48,7 @@
     <div class="pts"><svg viewBox="0 0 40 52"><use href="#flame"/></svg><span id="ptsT"></span></div>
   </div>
   <div class="rec" id="rec">NOVÝ REKORD!</div>
+  <div class="rec tu" id="tu">KONEC ČASU! DOJEĎ</div>
   <div class="tag" id="tag"></div>
   <div class="hint" id="hint" hidden></div>
   <div class="pad l" id="padL">
@@ -64,6 +67,7 @@
   <div class="mid">
     <button class="big-arrow fire" id="play" type="button"><span>HRÁT</span></button>
     <div class="chip"><svg class="fl" viewBox="0 0 40 52"><use href="#flame"/></svg><span class="num" id="totalTitle">0</span><span class="unit">plamínků celkem</span></div>
+    <div class="chip ptime" id="titleTime"><svg viewBox="0 0 24 24"><use href="#clock"/></svg><span></span></div>
     <div class="sponsor"><small>Hlavní partner</small><svg viewBox="0 0 300 90" role="img" aria-label="BoardBeat"><use href="#boardbeat"/></svg></div>
   </div>
   <div class="bottom">
@@ -72,6 +76,7 @@
       <button class="toggle" data-set="sfx" type="button" aria-pressed="true"><i></i>Zvuky</button>
       <button class="toggle" data-set="voice" type="button" aria-pressed="true"><i></i>Hlas v menu</button>
     </div>
+    <button class="ghost parentbtn" id="parentBtn" type="button">Pro rodiče</button>
     <div class="install" id="install" hidden>Přidej si hru na plochu: v Safari ťukni na <b>Sdílet</b> a pak <b>Přidat na plochu</b>.</div>
   </div>
 </section>
@@ -112,9 +117,36 @@
     <p id="resBest"></p>
     <p id="resAll"></p>
     <div class="unlock" id="resUnlock" hidden></div>
+    <p class="timeup" id="resTime" hidden><svg viewBox="0 0 32 24"><use href="#book"/></svg>Čas na hraní skončil. Přečti krátký příběh a jeď dál!</p>
     <div class="row"><button class="ghost" id="resMenu" type="button">Menu</button><button class="big-arrow" id="resAgain" type="button"><span>JET ZNOVU</span></button></div>
   </div>
 </section>
+
+<!-- reading between rides -->
+<section class="screen" id="sRead" hidden>
+  <div class="head"><h2 class="step"><b><svg viewBox="0 0 32 24"><use href="#book"/></svg></b><span id="readHead">Přečti si příběh</span></h2><div class="chip ptime"><svg viewBox="0 0 24 24"><use href="#clock"/></svg><span id="readGain">+4 min</span></div></div>
+  <div class="rcard"><div class="rbody" id="readBody"></div></div>
+  <div class="foot"><div class="rdots" id="readDots"></div><button class="big-arrow next" id="readNext" type="button"><span>DÁL</span></button></div>
+</section>
+
+<div class="modal" id="parent" hidden>
+  <div class="mcard">
+    <div id="pGate">
+      <h3>Pro rodiče</h3>
+      <p>Kolik je <b id="pQ">7 × 8</b>?</p>
+      <input id="pIn" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Výsledek">
+      <p class="err" id="pErr" hidden>To není správně.</p>
+      <div class="row"><button class="ghost" id="pCancel" type="button">Zavřít</button><button class="ghost go" id="pOk" type="button">Otevřít</button></div>
+    </div>
+    <div id="pPanel" hidden>
+      <h3>Pro rodiče</h3>
+      <button class="toggle" id="pOn" type="button" aria-pressed="true"><i></i>Čtení mezi hrami</button>
+      <div class="seg" id="pMin"><span>Hraní mezi čteními</span><button type="button" data-m="2">2 min</button><button type="button" data-m="4">4 min</button><button type="button" data-m="6">6 min</button><button type="button" data-m="8">8 min</button></div>
+      <p id="pStats"></p>
+      <div class="row"><button class="ghost" id="pGive" type="button">Dát čas teď</button><button class="ghost go" id="pClose" type="button">Hotovo</button></div>
+    </div>
+  </div>
+</div>
 
 <div id="rotate"><svg viewBox="0 0 64 64"><rect x="18" y="6" width="28" height="52" rx="6" fill="none" stroke="#ffd23f" stroke-width="4"/><circle cx="32" cy="50" r="3" fill="#ffd23f"/></svg>Otoč telefon<p>Hraje se na šířku.</p></div>
 <div id="boot">Nakládám skatepark…</div>

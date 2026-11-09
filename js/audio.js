@@ -80,6 +80,8 @@ export function createAudio(settings) {
     crash: () => { hiss(600, 80, 0.5, 0.45, 'lowpass'); tone('sine', 400, 60, 0.6, 0.35); },
     turbo: () => { tone('sawtooth', 70, 260, 0.9, 0.14); hiss(400, 2500, 0.9, 0.18); },
     click: () => tone('triangle', 880, 1200, 0.07, 0.12),
+    oops: () => { tone('triangle', 440, 392, 0.22, 0.12); tone('triangle', 349, 330, 0.32, 0.12, 0.2); },
+    tick: () => tone('sine', 1320, 1320, 0.09, 0.1),
     say(text) {
       if (!S.voice || !voice || !('speechSynthesis' in window)) return;
       try {

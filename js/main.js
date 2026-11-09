@@ -8,11 +8,13 @@ import { createRiderModel } from './riderModel.js';
 import { createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { flameScreen } from './results.js';
+import { createReading, createParent, GATE_DEFAULTS, fmtTime } from './reading.js';
 
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const KEY = 'plaminkovy-skatepark-v1';
 const store = (() => { const d = { total: 0, best: {}, rider: 'vojta', vehicle: 'modra', park: 'mesto', music: true, sfx: true, voice: true, tutorial: false };
   try { return Object.assign(d, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { return d; } })();
+store.gate = Object.assign({}, GATE_DEFAULTS, store.gate || {});
 let saveT = 0; const save = (now) => { if (!now && performance.now() - saveT < 1500) return; saveT = performance.now(); try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (_) {} };
 const RS = 1.25, fmt = (n) => n.toLocaleString('cs-CZ');
 const flamesWord = (n) => (n === 1 ? 'plamínek' : n >= 2 && n <= 4 ? 'plamínky' : 'plamínků');
@@ -43,9 +45,10 @@ const vehLocked = (v) => store.total < v.unlock;
 
 /* ---------- screens ---------- */
 let screen = 'boot';
-const SCREENS = { title: '#sTitle', rider: '#sRider', vehicle: '#sVehicle', park: '#sPark', results: '#sResults' };
+const SCREENS = { title: '#sTitle', rider: '#sRider', vehicle: '#sVehicle', park: '#sPark', results: '#sResults', read: '#sRead' };
 function show(name) {
   screen = name;
+  if (name !== 'read' && reading) reading.stop();
   for (const [k, sel] of Object.entries(SCREENS)) $(sel).hidden = k !== name;
   hud.hidden = name !== 'play' && name !== 'results';
   $$('.tot').forEach((e) => (e.textContent = fmt(store.total)));
@@ -53,13 +56,25 @@ function show(name) {
   if (name === 'rider') renderRider();
   if (name === 'vehicle') renderVehicle();
   if (name === 'park') renderParks();
+  if (name === 'title') renderTitleTime();
   world.snapNext();
 }
 const click = () => audio.click();
 
 // title
 $$('.toggle').forEach((b) => { const k = b.dataset.set; b.setAttribute('aria-pressed', !!store[k]); b.onclick = () => { audio.init(); store[k] = !store[k]; b.setAttribute('aria-pressed', store[k]); audio.apply(); save(true); click(); }; });
-$('#play').onclick = () => { audio.init(); click(); audio.say('Vyber si panáčka'); show('rider'); };
+$('#play').onclick = () => { audio.init(); click(); if (reading.needRead()) return goRead(); audio.say('Vyber si panáčka'); show('rider'); };
+function renderTitleTime() {
+  const g = store.gate, el = $('#titleTime'); el.hidden = !g.on;
+  el.querySelector('span').textContent = g.left > 0 ? `Čas na hraní ${fmtTime(g.left)}` : 'Teď je čas na čtení';
+}
+
+/* ---------- reading between rides ---------- */
+let reading = null;
+reading = createReading({ store, save, audio, onPlay: () => startRide(), onMenu: () => show('title') });
+const parent = createParent({ store, save, audio, onChange: () => { renderTitleTime(); updateClock(); } });
+$('#parentBtn').onclick = () => { click(); parent.open(); };
+function goRead() { $('#readGain').textContent = `+${store.gate.minutes} min`; show('read'); reading.start(); audio.say('Čas na čtení'); }
 const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 $('#install').hidden = standalone || !/iPhone|iPad|iPod/.test(navigator.userAgent);
 
@@ -125,7 +140,10 @@ $('#sPark .back').onclick = () => { click(); show('vehicle'); };
 /* ---------- riding ---------- */
 let sim = null, session = null, paused = false;
 const num = $('#num');
+let timeUpT = -1, lastSec = -1;
 function startRide() {
+  if (reading.needRead()) return goRead();
+  timeUpT = -1; updateClock();
   ensureModel(riderDef(), vehDef());
   sim = new Rider(track, vehDef(), onEvent);
   session = { flames: 0, shown: 0, best: { pts: 0, title: '' }, startTotal: store.total };
@@ -174,6 +192,7 @@ function scored(d) {
 }
 $('#done').onclick = () => { if (screen !== 'play') return; click(); endRide(); };
 function endRide() {
+  if (screen !== 'play') return;
   save(true); input.clear();
   const unlocked = VEHICLES.filter((v) => v.unlock > session.startTotal && v.unlock <= store.total);
   show('results'); tutorial.stop();
@@ -181,6 +200,7 @@ function endRide() {
   flameScreen($('#flameCanvas'), session.flames, (e) => (tot.textContent = fmt(Math.round(session.flames * e))));
   $('#resBest').innerHTML = session.best.pts ? `Nejlepší trik: <b>${session.best.title}</b> za ${fmt(session.best.pts)}` : 'Příště zkus skočit a udělat salto!';
   $('#resAll').innerHTML = `Celkem máš <b>${fmt(store.total)}</b> ${flamesWord(store.total)}`;
+  const need = reading.needRead(); $('#resTime').hidden = !need; $('#resAgain span').textContent = need ? 'ČTENÍ' : 'JET ZNOVU';
   const u = $('#resUnlock'); u.hidden = !unlocked.length; u.textContent = unlocked.length ? `Odemčeno: ${unlocked.map((v) => v.name).join(', ')}!` : '';
 }
 $('#resAgain').onclick = () => { click(); startRide(); };
@@ -237,7 +257,7 @@ function frame(now) {
       const inp = input.read(), sub = Math.max(1, Math.ceil(dt / (1 / 120)));
       for (let i = 0; i < sub; i++) sim.step(dt / sub, i === 0 ? inp : { x: inp.x, jumpPressed: false, actionPressed: false });
       audio.rolling(sim.speed, sim.mode === 'ground', sim.mode === 'grind');
-      hudFrame(); tutorial.frame();
+      hudFrame(); tutorial.frame(); playClock(dt);
     } else audio.rolling(0, false, false);
     model.root.visible = true;
     opts = { mode: 'play', rider: sim, model, frame: sim.frame(), pose: { crouch: sim.crouch, ...sim.pose }, RS, wheel: sim.wheel };
@@ -248,6 +268,29 @@ function frame(now) {
   } else { if (model) model.root.visible = false; opts = { mode: 'title' }; }
   world.update(dt, opts);
   requestAnimationFrame(frame);
+}
+// play time: counts only while riding, survives restarts of the app
+const clockEl = $('#clock'), clockT = $('#clockT');
+function updateClock() {
+  const g = store.gate; clockEl.hidden = !g.on; if (!g.on) return;
+  clockT.textContent = fmtTime(g.left); clockEl.classList.toggle('low', g.left <= 30);
+}
+function playClock(dt) {
+  const g = store.gate;
+  if (timeUpT >= 0) {
+    // time is up: let him land the trick, then end the ride
+    timeUpT += dt;
+    if ((timeUpT > 1.2 && sim.mode === 'ground') || timeUpT > 6) endRide();
+    return;
+  }
+  if (!g.on) return;
+  g.left = Math.max(0, g.left - dt);
+  const sec = Math.ceil(g.left);
+  if (sec !== lastSec) {
+    lastSec = sec; updateClock(); save();
+    if (sec <= 10 && sec > 0) audio.tick();
+  }
+  if (g.left <= 0) { save(true); timeUpT = 0; pop($('#tu')); audio.fanfare(false); }
 }
 const liveEl = $('#live'); let lastCd = '', lastAir = null;
 function hudFrame() {
