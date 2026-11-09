@@ -19,7 +19,21 @@ let saveT = 0; const save = (now) => { if (!now && performance.now() - saveT < 1
 const RS = 1.25, fmt = (n) => n.toLocaleString('cs-CZ');
 const flamesWord = (n) => (n === 1 ? 'plamínek' : n >= 2 && n <= 4 ? 'plamínky' : 'plamínků');
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+// updates: look for a new version on every start and whenever the app comes back to the screen,
+// then switch to it right away (or after the ride, so a run is never cut off)
+let updateReady = false;
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+    reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSW || updateReady) return; updateReady = true;
+    let riding = false; try { riding = screen === 'play'; } catch (_) {}
+    if (!riding) location.reload();
+  });
+}
 
 // fonts must be ready before the graffiti is painted
 await Promise.race([Promise.all([document.fonts.load('80px Bungee'), document.fonts.load('40px "Lilita One"')]).catch(() => {}), new Promise((r) => setTimeout(r, 2500))]);
@@ -48,6 +62,7 @@ let screen = 'boot';
 const SCREENS = { title: '#sTitle', rider: '#sRider', vehicle: '#sVehicle', park: '#sPark', results: '#sResults', read: '#sRead' };
 function show(name) {
   screen = name;
+  if (updateReady && name !== 'play') { location.reload(); return; }
   if (name !== 'read' && reading) reading.stop();
   for (const [k, sel] of Object.entries(SCREENS)) $(sel).hidden = k !== name;
   hud.hidden = name !== 'play' && name !== 'results';
