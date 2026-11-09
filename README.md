@@ -37,7 +37,7 @@ Na počítači: šipky, mezerník = SKOK, X = TURBO/TRIK. Funguje i herní ovlad
 - Sponzor BoardBeat na úvodní obrazovce a na bannerech ve všech hřištích.
 - Plamínky podle Vojtových pravidel (kruh 4, vývrtka 6, flair 7 a 8), kombo násobič, rekordy.
 - Plamínková obrazovka na konci jízdy.
-- Čtení mezi hrami: po 4 minutách jízdy přijde krátký příběh (1 až 2 odstavce) a otázka se třemi možnostmi. Správná odpověď = další 4 minuty a 20 plamínků, špatná = jiný příběh. Texty jsou pro 2. třídu ve třech úrovních, obtížnost se sama přizpůsobuje. Velké písmo, větší mezery, ťuknutím se věta podsvítí. Tlačítko DÁL se odemkne až po chvíli čtení. Hlasatel texty nečte.
+- Čtení mezi hrami: po 2 minutách jízdy přijde krátký příběh (1 až 2 odstavce) a otázka se třemi možnostmi. Správná odpověď = další 2 minuty a 20 plamínků, špatná = jiný příběh. Texty jsou pro 2. třídu ve třech úrovních, obtížnost se sama přizpůsobuje. Velké písmo, větší mezery, ťuknutím se věta podsvítí. Tlačítko DÁL se odemkne až po chvíli čtení. Hlasatel texty nečte.
 - Pro rodiče (úvodní obrazovka, chráněno příkladem na násobení): zapnout nebo vypnout čtení, délka hraní 2/4/6/8 minut, dát čas hned, přehled přečtených příběhů. Texty jsou v `js/texts.js`.
 - Hudba a zvuky. Český hlasatel mluví jen v menu (pokud má zařízení český hlas), při jízdě neruší.
 

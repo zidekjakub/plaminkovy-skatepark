@@ -8,7 +8,7 @@ const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) {
 const countWords = (s) => s.split(/\s+/).filter(Boolean).length;
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 export const BONUS = 20;
-export const GATE_DEFAULTS = { on: true, minutes: 4, left: 240, level: 1, streak: 0, miss: 0, recent: [], passed: [], reads: 0, ok: 0 };
+export const GATE_DEFAULTS = { v: 2, on: true, minutes: 2, left: 120, level: 1, streak: 0, miss: 0, recent: [], passed: [], reads: 0, ok: 0 };
 export const fmtTime = (s) => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 export function createReading({ store, save, audio, onPlay, onMenu }) {

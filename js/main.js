@@ -15,6 +15,8 @@ const KEY = 'plaminkovy-skatepark-v1';
 const store = (() => { const d = { total: 0, best: {}, rider: 'vojta', vehicle: 'modra', park: 'mesto', music: true, sfx: true, voice: true, tutorial: false };
   try { return Object.assign(d, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { return d; } })();
 store.gate = Object.assign({}, GATE_DEFAULTS, store.gate || {});
+// v2: play time between readings went down from 4 to 2 minutes
+if (store.gate.v !== 2) { store.gate.v = 2; store.gate.minutes = 2; store.gate.left = Math.min(store.gate.left, 120); }
 let saveT = 0; const save = (now) => { if (!now && performance.now() - saveT < 1500) return; saveT = performance.now(); try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (_) {} };
 const RS = 1.25, fmt = (n) => n.toLocaleString('cs-CZ');
 const flamesWord = (n) => (n === 1 ? 'plamínek' : n >= 2 && n <= 4 ? 'plamínky' : 'plamínků');
